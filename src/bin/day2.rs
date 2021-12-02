@@ -1,9 +1,7 @@
-use std::{convert::Infallible, str::FromStr};
-
 fn main() {
     let input = include_str!("../../data/day2.txt")
         .lines()
-        .map(|line| Direction::from_str(line).unwrap());
+        .map(Direction::from_str);
     let naive_position = input
         .clone()
         .fold((0, 0), |(x, y), direction| match direction {
@@ -11,7 +9,6 @@ fn main() {
             Direction::Down(distance) => (x, y + distance),
             Direction::Up(distance) => (x, y - distance),
         });
-
     let position = input.fold((0, 0, 0), |(x, y, aim), direction| match direction {
         Direction::Forward(distance) => (x + distance, y + aim * distance, aim),
         Direction::Down(distance) => (x, y, aim + distance),
@@ -40,16 +37,14 @@ enum Direction {
     Up(i32),
 }
 
-impl FromStr for Direction {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl Direction {
+    fn from_str(s: &str) -> Self {
         let (direction, distance) = s.split_once(' ').unwrap();
-        Ok(match direction {
+        match direction {
             "forward" => Direction::Forward(distance.parse().unwrap()),
             "down" => Direction::Down(distance.parse().unwrap()),
             "up" => Direction::Up(distance.parse().unwrap()),
             &_ => unreachable!(),
-        })
+        }
     }
 }
