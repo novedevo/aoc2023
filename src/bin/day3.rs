@@ -1,5 +1,17 @@
 fn main() {
     let input = include_str!("../../data/day3_test.txt").lines();
+    let (gamma, epsilon) = generate_gamma_epsilon(input.clone());
+
+    let (g, e) = (
+        u32::from_str_radix(&gamma, 2).unwrap(),
+        u32::from_str_radix(&epsilon, 2).unwrap(),
+    );
+    println!("gamma ({}) * epsilon ({}) = {}", g, e, g * e);
+
+    let _o2 = recursive_filter(input, 0, '1');
+}
+
+fn generate_gamma_epsilon<'a>(input: impl Iterator<Item = &'a str> + Clone) -> (String, String) {
     let length = input.clone().count();
     let mut i = 0;
     let mut popcount = [0; 12];
@@ -28,46 +40,31 @@ fn main() {
         .map(|count| if count * 2 >= length { '0' } else { '1' })
         .collect::<String>();
 
-    let (g, e) = (
-        u32::from_str_radix(&gamma, 2).unwrap(),
-        u32::from_str_radix(&epsilon, 2).unwrap(),
-    );
-    println!("gamma ({}) * epsilon ({}) = {}", g, e, g * e);
+    (gamma, epsilon)
+}
 
-    let gamma = gamma.chars().collect::<Vec<char>>();
-    let epsilon = epsilon.chars().collect::<Vec<char>>();
+fn recursive_filter<'a>(
+    mut input: impl Iterator<Item = &'a str> + Clone,
+    index: usize,
+    preferred_digit: char,
+) -> &'a str {
+    let (gamma, epsilon) = generate_gamma_epsilon(input.clone());
+    if index >= gamma.chars().count() {
+        return input.next().unwrap();
+    }
+    let input = input.filter(|item| {
+        let (current, (gamma_char, epsilon_char)) = item
+            .chars()
+            .zip(gamma.chars().zip(epsilon.chars()))
+            .nth(index)
+            .unwrap();
 
-    // let mut i = 0;
-    // let mut o2 = input.clone();
-
-    // loop {
-    let o2 = input
-        .clone()
-        .map(|line| -> usize {
-            line.chars()
-                .zip(gamma.iter())
-                .zip(epsilon.iter())
-                .map(|((current, &gamma_char), &epsilon_char)| -> bool {
-                    let (most, least) = (current == gamma_char, current == epsilon_char);
-                    if most && least {
-                        current == '1'
-                    } else {
-                        most
-                    }
-                })
-                .take_while(|&digit| digit)
-                .count()
-        })
-        .enumerate()
-        .max_by(|a, b| a.1.cmp(&b.1))
-        .unwrap()
-        .0;
-
-    println!(
-        "line {} of the test file is {}",
-        o2,
-        input.clone().nth(o2).unwrap()
-    )
-    // i += 1;
-    // }
+        let (most, least) = (current == gamma_char, current == epsilon_char);
+        if most && least {
+            current == preferred_digit
+        } else {
+            most
+        }
+    });
+    recursive_filter(input, index, preferred_digit)
 }
