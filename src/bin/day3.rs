@@ -1,7 +1,7 @@
 use std::iter::repeat;
 
 fn main() {
-    let input = include_str!("../../data/day3_test.txt").lines();
+    let input = include_str!("../../data/day3.txt").lines();
     let (gamma, epsilon) = generate_gamma_epsilon(input.clone());
 
     let (g, e) = (
@@ -10,9 +10,13 @@ fn main() {
     );
     println!("gamma ({}) * epsilon ({}) = {}", g, e, g * e);
 
-    let _o2 = recursive_filter(input.clone().collect(), 0, '1');
-    // let co2 = recursive_filter(input.collect(), 0, '0');
-    // println!("{} {}", _o2, co2)
+    let o2 = recursive_filter(input.clone().collect(), 0, '1');
+    let co2 = recursive_filter(input.collect(), 0, '0');
+    let (o, c) = (
+        u32::from_str_radix(o2, 2).unwrap(),
+        u32::from_str_radix(co2, 2).unwrap(),
+    );
+    println!("o2 * co2 = {}", o * c)
 }
 
 fn generate_gamma_epsilon<'a>(input: impl Iterator<Item = &'a str> + Clone) -> (String, String) {
@@ -40,25 +44,40 @@ fn generate_gamma_epsilon<'a>(input: impl Iterator<Item = &'a str> + Clone) -> (
     (gamma, epsilon)
 }
 
-fn recursive_filter(input: Vec<&str>, index: usize, preferred_digit: char) -> &str {
-    let input = input.into_iter();
-    let (gamma, epsilon) = dbg!(generate_gamma_epsilon(input.clone()));
-    if index >= gamma.chars().count() {
-        return input.clone().next().unwrap();
-    }
-    let input = input.filter(|item| {
-        let (current, (gamma_char, epsilon_char)) = item
-            .chars()
-            .zip(gamma.chars().zip(epsilon.chars()))
-            .nth(index)
-            .unwrap();
+fn get_digit_prevalence(input: &[&str], index: usize) -> std::cmp::Ordering {
+    let vertical_slice: Vec<char> = input
+        .iter()
+        .map(|line| line.chars().nth(index).unwrap())
+        .collect();
+    let ones = vertical_slice.iter().filter(|&&item| item == '1').count();
+    let zeroes = vertical_slice.iter().filter(|&&item| item == '0').count();
+    ones.cmp(&zeroes)
+}
 
-        let (most, least) = (current == gamma_char, current == epsilon_char);
-        if most && least {
-            dbg!(current == preferred_digit)
-        } else {
-            most
-        }
-    });
+fn recursive_filter(input: Vec<&str>, index: usize, preferred_digit: char) -> &str {
+    if input.len() == 1 || index >= input[0].chars().count() {
+        return input[0];
+    }
+    let input = input
+        .iter()
+        .filter(|item| {
+            let ordering = get_digit_prevalence(&input, index);
+            let current = item.chars().nth(index).unwrap();
+            use std::cmp::Ordering::{Equal, Greater, Less};
+            match preferred_digit {
+                '1' => match ordering {
+                    Greater => current == '1',
+                    Less => current == '0',
+                    Equal => current == preferred_digit,
+                },
+                '0' => match ordering {
+                    Greater => current == '0',
+                    Less => current == '1',
+                    Equal => current == preferred_digit,
+                },
+                _ => unreachable!(),
+            }
+        })
+        .copied();
     recursive_filter(input.collect(), index + 1, preferred_digit)
 }
