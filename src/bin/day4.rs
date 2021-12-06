@@ -76,9 +76,9 @@ fn main() {
 fn run_bingo(mut boards: Vec<Board>, drawings: Vec<u32>) -> (Board, u32) {
     for draw in drawings {
         let mut winners = vec![];
-        for i in 0..boards.len() {
-            boards[i].call(draw);
-            if boards[i].check() {
+        for (i, board) in boards.iter_mut().enumerate() {
+            board.call(draw);
+            if board.check() {
                 winners.push(i)
             }
         }
@@ -87,7 +87,7 @@ fn run_bingo(mut boards: Vec<Board>, drawings: Vec<u32>) -> (Board, u32) {
 
         for elem in winners.iter().rev() {
             println!("removing index {} from the {} boards", elem, boards.len());
-            let mut removed = boards.remove(*elem);
+            let removed = boards.remove(*elem);
             if boards.is_empty() {
                 // removed.uncall(draw);
                 return dbg!(removed, draw);
