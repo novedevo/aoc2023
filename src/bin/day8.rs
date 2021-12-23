@@ -79,14 +79,6 @@ impl Transmission<'static> {
         let two_three_five: [&str; 3] = self.by_char_count(5);
         let six_nine_zero: [&str; 3] = self.by_char_count(6);
 
-        let middle_three_segments = Self::common(&two_three_five);
-        let topleft_bottomright = Self::common(&six_nine_zero);
-
-        let top_segment = seven
-            .chars()
-            .find(|char| middle_three_segments.contains(char))
-            .unwrap();
-
         let (a, b, c) = (two_three_five[0], two_three_five[1], two_three_five[2]);
         let commonalities = (
             Self::common(&[a, b]).len() > 3,
@@ -94,12 +86,6 @@ impl Transmission<'static> {
             Self::common(&[b, c]).len() > 3,
         );
 
-        let three = match commonalities {
-            (true, true, false) => a,
-            (true, false, true) => b,
-            (false, true, true) => c,
-            _ => unreachable!(),
-        };
         let six = *six_nine_zero
             .iter()
             .find(|&&digit| Self::common(&[digit, one]).len() == 1)
@@ -113,6 +99,12 @@ impl Transmission<'static> {
             .find(|&&digit| digit != six && digit != nine)
             .unwrap();
 
+        let three = match commonalities {
+            (true, true, false) => a,
+            (true, false, true) => b,
+            (false, true, true) => c,
+            _ => unreachable!(),
+        };
         let two = *two_three_five
             .iter()
             .filter(|&&digit| digit != three)
