@@ -7,23 +7,49 @@ fn main() {
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
-    dbg!(get_low_points(input));
+    let mut map = Map {
+        inner: input,
+        explored: vec![],
+    };
+    dbg!(map.product_top_three_basins());
 }
-fn get_low_points(map: Vec<Vec<u32>>) -> u32 {
-    let mut true_risk = 0;
-    for row in 0..map.len() {
-        for col in 0..map[0].len() {
-            let risk = map[row][col];
-            let (top, bottom, left, right) = (
-                row == 0 || map[row - 1][col] > risk,
-                row == map.len() - 1 || map[row + 1][col] > risk,
-                col == 0 || map[row][col - 1] > risk,
-                col == map[0].len() - 1 || map[row][col + 1] > risk,
-            );
-            if top && bottom && left && right {
-                true_risk += dbg!(risk) + 1;
+
+struct Map {
+    inner: Vec<Vec<u32>>,
+    explored: Vec<Vec<bool>>,
+}
+impl Map {
+    fn product_top_three_basins(&mut self) -> u32 {
+        let (height, width) = (self.inner.len(), self.inner[0].len());
+        self.explored = vec![vec![false; width]; height];
+        let mut basin_sizes = vec![];
+        for row in 0..height {
+            for col in 0..width {
+                if self.explored[row][col] || self.inner[row][col] == 9 {
+                    continue;
+                } else {
+                    basin_sizes.push(self.size(row, col));
+                }
             }
         }
+        basin_sizes.sort_unstable();
+        basin_sizes.reverse();
+        basin_sizes[..3].iter().product::<usize>() as u32
     }
-    true_risk
+    fn size(&mut self, row: usize, col: usize) -> usize {
+        let map = &self.inner;
+        let explored = &mut self.explored;
+        let risk = map[row][col];
+        if explored[row][col] || risk == 9 {
+            return 0;
+        }
+        explored[row][col] = true;
+        let (height, width) = (map.len(), map[0].len());
+        let (top, bottom, left, right) = (row == 0, row == height - 1, col == 0, col == width - 1);
+
+        1 + (if !top { self.size(row - 1, col) } else { 0 }
+            + if !bottom { self.size(row + 1, col) } else { 0 }
+            + if !left { self.size(row, col - 1) } else { 0 }
+            + if !right { self.size(row, col + 1) } else { 0 })
+    }
 }
