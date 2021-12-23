@@ -21,12 +21,18 @@ fn part1() -> usize {
 
 fn main() {
     part1();
-    let input = include_str!("../../data/day8_test1.txt")
+    let input: usize = include_str!("../../data/day8.txt")
         .lines()
         .map(Transmission::from_str)
-        .map(|t| t.parse());
+        .map(|t| {
+            let digits = t.collapse();
+            t.parse(digits)
+        })
+        .sum();
+    println!("{}", input)
 }
 
+#[derive(Debug)]
 struct Transmission<'a> {
     output: [&'a str; 4],
     signal_patterns: [&'a str; 10],
@@ -43,7 +49,28 @@ impl Transmission<'static> {
             output: output.try_into().unwrap(),
         }
     }
-    fn parse(&self) {
+    fn parse(&self, digits: [&str; 10]) -> usize {
+        let digits = digits.iter().enumerate();
+        let mut output = self
+            .output
+            .iter()
+            .map(|outer_digit| {
+                digits
+                    .clone()
+                    .find(|(_, digit)| {
+                        digit.len() == outer_digit.len()
+                            && outer_digit.chars().all(|char| digit.contains(char))
+                    })
+                    .unwrap()
+            })
+            .map(|(index, _)| index);
+        output.next().unwrap() * 1000
+            + output.next().unwrap() * 100
+            + output.next().unwrap() * 10
+            + output.next().unwrap()
+    }
+    fn collapse(&self) -> [&str; 10] {
+        dbg!(self);
         let one = self.find_single_char(2);
         let four = self.find_single_char(4);
         let seven = self.find_single_char(3);
@@ -85,6 +112,17 @@ impl Transmission<'static> {
             .iter()
             .find(|&&digit| digit != six && digit != nine)
             .unwrap();
+
+        let two = *two_three_five
+            .iter()
+            .filter(|&&digit| digit != three)
+            .find(|digit| Self::common(&[digit, four]).len() == 2)
+            .unwrap();
+        let five = *two_three_five
+            .iter()
+            .find(|&&digit| digit != two && digit != three)
+            .unwrap();
+        [zero, one, two, three, four, five, six, seven, eight, nine]
     }
 
     fn find_single_char(&self, count: usize) -> &str {
