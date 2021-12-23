@@ -1,33 +1,38 @@
 fn main() {
-    let input = include_str!("../../data/day10.txt")
+    let mut input = include_str!("../../data/day10.txt")
         .lines()
-        .map(|line| {
+        .filter_map(|line| {
             let chars = line.chars();
             let mut stack = vec![];
             for char in chars {
                 if "{[(<".contains(char) {
                     stack.push(char)
                 } else {
-                    let a = match (char, *stack.last().unwrap()) {
+                    match (char, *stack.last().unwrap()) {
                         ('}', '{') => stack.pop(),
                         (')', '(') => stack.pop(),
                         (']', '[') => stack.pop(),
                         ('>', '<') => stack.pop(),
-                        _ => None,
+                        _ => return None,
                     };
-                    if a.is_none() {
-                        return match char {
-                            ')' => 3,
-                            ']' => 57,
-                            '}' => 1197,
-                            '>' => 25137,
-                            _ => unreachable!(),
-                        };
-                    }
                 }
             }
-            0
+            Some(stack)
         })
-        .sum::<u32>();
-    dbg!(input);
+        .map(|mut stack| {
+            stack.reverse();
+            stack
+                .iter()
+                .map(|char| match char {
+                    '{' => 3,
+                    '(' => 1,
+                    '[' => 2,
+                    '<' => 4,
+                    _ => unreachable!(),
+                })
+                .fold(0, |init, curr| init * 5 + curr)
+        })
+        .collect::<Vec<u64>>();
+    input.sort_unstable();
+    dbg!(input[input.len() / 2]);
 }
