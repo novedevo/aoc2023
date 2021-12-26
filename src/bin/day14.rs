@@ -8,27 +8,50 @@ fn main() {
         .lines()
         .map(|line| line.split_once(" -> ").unwrap())
         .collect::<std::collections::HashMap<_, _>>();
-    let mut current_string = string.to_string();
-    for _ in 0..20 {
-        let mut next_string = String::new();
-        for elem in current_string.chars().collect::<Vec<_>>().windows(2) {
-            let elem_string = elem.iter().collect::<String>();
-            if let Some(&result) = rules.get(&elem_string as &str) {
-                next_string += &format!("{}{}", elem[0], result);
-            } else {
-                next_string += &elem_string
+    let pairs = string
+        .chars()
+        .collect::<Vec<_>>()
+        .windows(2)
+        .map(|chars| chars.iter().collect())
+        .collect::<Vec<String>>();
+    let mut pair_count: HashMap<String, usize> = HashMap::new();
+    for pair in pairs {
+        *pair_count.entry(pair).or_default() += 1
+    }
+
+    for _ in 0..40 {
+        for pair in pair_count.clone().iter() {
+            if let Some(&result) = rules.get(pair.0 as &str) {
+                *pair_count
+                    .entry(format!("{}{}", pair.0.chars().next().unwrap(), result))
+                    .or_default() += pair.1;
+                *pair_count
+                    .entry(format!("{}{}", result, pair.0.chars().last().unwrap()))
+                    .or_default() += pair.1;
+                *pair_count.entry(pair.0.clone()).or_default() -= pair.1;
             }
         }
-        current_string = next_string + &current_string.chars().last().unwrap().to_string();
+        pair_count = pair_count
+            .iter()
+            .filter(|(_key, &value)| value > 0)
+            .map(|(key, &value)| (key.clone(), value))
+            .collect();
+        println!("{:?}", pair_count)
     }
+    println!("{}", get_frequencies(pair_count))
+}
+
+fn get_frequencies(pair_count: HashMap<String, usize>) -> usize {
     let mut frequencies: HashMap<char, usize> = HashMap::new();
-    for letter in current_string.chars() {
-        *frequencies.entry(letter).or_default() += 1usize;
+    for letter in pair_count {
+        for char in letter.0.chars() {
+            *frequencies.entry(char).or_default() += letter.1;
+        }
     }
     let mut frequencies = frequencies
         .iter()
-        .map(|(key, &value)| value)
+        .map(|(_key, &value)| value)
         .collect::<Vec<_>>();
-    frequencies.sort();
-    println!("{:?}", frequencies.iter().last().unwrap() - frequencies[0])
+    frequencies.sort_unstable();
+    ((frequencies.iter().last().unwrap() - frequencies[0]) + 1) / 2
 }
