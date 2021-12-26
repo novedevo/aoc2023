@@ -1,16 +1,16 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use Node::*;
 fn main() {
-    let edges = include_str!("../../data/day12_test1.txt")
+    let edges = include_str!("../../data/day12.txt")
         .lines()
         .map(|line| line.split_once("-").unwrap())
         .map(|(start, end)| [Node::from_str(start), Node::from_str(end)])
         .collect::<Vec<_>>();
-    let solutions = solve(Start, &edges, HashSet::new(), HashSet::new(), true);
+    let solutions = solve(Start, &edges, HashSet::new(), HashSet::new(), true, vec![]);
     println!("{}", solutions);
 }
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 enum Node {
     Start,
     End,
@@ -30,14 +30,30 @@ impl Node {
         }
     }
 }
+impl std::fmt::Debug for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Start => "start",
+                End => "end",
+                Small(inner) | Large(inner) => inner,
+            }
+        )
+    }
+}
 fn solve(
     current_node: Node,
     graph: &[[Node; 2]],
     mut visited: HashSet<Node>,
     mut visited_small: HashSet<Node>,
     mut allowed_to_visit_small: bool,
+    mut tracker: Vec<Node>,
 ) -> usize {
+    tracker.push(current_node);
     if current_node == End {
+        // println!("{:?}", tracker);
         return 1;
     }
     match current_node {
@@ -48,9 +64,8 @@ fn solve(
             if !allowed_to_visit_small || visited_small.contains(&current_node) {
                 visited.insert(current_node);
                 allowed_to_visit_small = false;
-            } else {
-                visited_small.insert(current_node);
             }
+            visited_small.insert(current_node);
         }
         Large(_) => (),
     };
@@ -65,7 +80,9 @@ fn solve(
                 None
             }
         })
-        .filter(|node| !visited.contains(node))
+        .filter(|node| {
+            !visited.contains(node) && (allowed_to_visit_small || !visited_small.contains(node))
+        })
         .map(|node| {
             solve(
                 node,
@@ -73,6 +90,7 @@ fn solve(
                 visited.clone(),
                 visited_small.clone(),
                 allowed_to_visit_small,
+                tracker.clone(),
             )
         })
         .sum()
