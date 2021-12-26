@@ -2,38 +2,12 @@ use std::collections::HashSet;
 
 use Node::*;
 fn main() {
-    let edges = include_str!("../../data/day12_test1.txt")
+    let edges = include_str!("../../data/day12.txt")
         .lines()
         .map(|line| line.split_once("-").unwrap())
         .map(|(start, end)| [Node::from_str(start), Node::from_str(end)])
         .collect::<Vec<_>>();
-    let mut stack = vec![Start];
-    // let mut paths = vec![];
-    let mut visited = HashSet::new();
-    let mut solutions = 0;
-    while let Some(current_node) = stack.pop() {
-        for next_node in edges.iter().filter_map(|edge| {
-            if edge[0] == current_node {
-                Some(edge[1])
-            } else if edge[1] == current_node {
-                Some(edge[0])
-            } else {
-                None
-            }
-        }) {
-            dbg!(next_node);
-            if next_node == End {
-                solutions += 1;
-            }
-            if !visited.contains(&next_node) {
-                stack.push(next_node);
-                let _ = match next_node {
-                    Start | End | Small(_) => visited.insert(next_node),
-                    Large(_) => false,
-                };
-            }
-        }
-    }
+    let solutions = solve(Start, &edges, HashSet::new());
     println!("{}", solutions);
 }
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -55,4 +29,27 @@ impl Node {
             Small(str)
         }
     }
+}
+fn solve(current_node: Node, graph: &[[Node; 2]], mut visited: HashSet<Node>) -> usize {
+    if current_node == End {
+        return 1;
+    }
+    let _ = match current_node {
+        Start | End | Small(_) => visited.insert(current_node),
+        Large(_) => false,
+    };
+    graph
+        .iter()
+        .filter_map(|edge| {
+            if edge[0] == current_node {
+                Some(edge[1])
+            } else if edge[1] == current_node {
+                Some(edge[0])
+            } else {
+                None
+            }
+        })
+        .filter(|node| !visited.contains(node))
+        .map(|node| solve(node, graph, visited.clone()))
+        .sum()
 }
