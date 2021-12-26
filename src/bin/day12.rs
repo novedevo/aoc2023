@@ -2,12 +2,12 @@ use std::collections::HashSet;
 
 use Node::*;
 fn main() {
-    let edges = include_str!("../../data/day12.txt")
+    let edges = include_str!("../../data/day12_test1.txt")
         .lines()
         .map(|line| line.split_once("-").unwrap())
         .map(|(start, end)| [Node::from_str(start), Node::from_str(end)])
         .collect::<Vec<_>>();
-    let solutions = solve(Start, &edges, HashSet::new());
+    let solutions = solve(Start, &edges, HashSet::new(), HashSet::new(), true);
     println!("{}", solutions);
 }
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -30,13 +30,29 @@ impl Node {
         }
     }
 }
-fn solve(current_node: Node, graph: &[[Node; 2]], mut visited: HashSet<Node>) -> usize {
+fn solve(
+    current_node: Node,
+    graph: &[[Node; 2]],
+    mut visited: HashSet<Node>,
+    mut visited_small: HashSet<Node>,
+    mut allowed_to_visit_small: bool,
+) -> usize {
     if current_node == End {
         return 1;
     }
-    let _ = match current_node {
-        Start | End | Small(_) => visited.insert(current_node),
-        Large(_) => false,
+    match current_node {
+        Start | End => {
+            visited.insert(current_node);
+        }
+        Small(_) => {
+            if !allowed_to_visit_small || visited_small.contains(&current_node) {
+                visited.insert(current_node);
+                allowed_to_visit_small = false;
+            } else {
+                visited_small.insert(current_node);
+            }
+        }
+        Large(_) => (),
     };
     graph
         .iter()
@@ -50,6 +66,14 @@ fn solve(current_node: Node, graph: &[[Node; 2]], mut visited: HashSet<Node>) ->
             }
         })
         .filter(|node| !visited.contains(node))
-        .map(|node| solve(node, graph, visited.clone()))
+        .map(|node| {
+            solve(
+                node,
+                graph,
+                visited.clone(),
+                visited_small.clone(),
+                allowed_to_visit_small,
+            )
+        })
         .sum()
 }

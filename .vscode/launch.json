@@ -4,19 +4,18 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'day9'",
+            "name": "Debug executable 'day12'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=day9",
+                    "--bin=day12",
                     "--package=aoc2021"
                 ],
                 "filter": {
-                    "name": "day9",
+                    "name": "day12",
                     "kind": "bin"
                 }
             },
@@ -26,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'day9'",
+            "name": "Debug unit tests in executable 'day12'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=day9",
+                    "--bin=day12",
                     "--package=aoc2021"
                 ],
                 "filter": {
-                    "name": "day9",
+                    "name": "day12",
                     "kind": "bin"
                 }
             },
