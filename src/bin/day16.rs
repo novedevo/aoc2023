@@ -2,11 +2,10 @@ use bitvec::prelude::*;
 use hex::FromHex;
 
 fn main() {
-    let tvec = Vec::from_hex("D2FE28").unwrap();
+    let tvec = Vec::from_hex("8A004A801A8002F478").unwrap();
     let transmission = tvec.view_bits::<Msb0>();
-    let (version, type_id) = (to_u8(&transmission[0..3]), to_u8(&transmission[3..6]));
-    let packet = Packet::new(version, type_id, &transmission[6..]);
-    println!("{:?}", packet)
+    let packet = Packet::new(transmission);
+    println!("{:#?}", packet)
 }
 fn to_u8(slice: &BitSlice<Msb0, u8>) -> u8 {
     u8::from_str_radix(&bitslice_to_string(slice), 2).unwrap()
@@ -18,19 +17,29 @@ struct Packet {
     inner: Inner,
 }
 impl Packet {
-    fn new(version: u8, type_id: u8, inner_bits: &BitSlice<Msb0, u8>) -> Self {
-        let inner = if type_id == 4 {
-            Inner::Literal(Self::parse_literal(inner_bits))
-        } else {
-            Inner::Children(Self::parse_children(inner_bits))
-        };
-        Self {
-            version,
-            type_id,
-            inner,
-        }
+    fn new(bits: &BitSlice<Msb0, u8>) -> (usize, Self) {
+        let (version, type_id) = (to_u8(&bits[0..3]), to_u8(&bits[3..6]));
+        Self::inner_new(version, type_id, &bits[6..])
     }
-    fn parse_literal(bits: &BitSlice<Msb0, u8>) -> usize {
+    fn inner_new(version: u8, type_id: u8, inner_bits: &BitSlice<Msb0, u8>) -> (usize, Self) {
+        dbg!(inner_bits);
+        let inner = if type_id == 4 {
+            let literal = Self::parse_literal(inner_bits);
+            (literal.0, Inner::Literal(literal.1))
+        } else {
+            let children = Self::parse_children(inner_bits);
+            (children.0, Inner::Children(children.1))
+        };
+        (
+            6 + inner.0,
+            Self {
+                version,
+                type_id,
+                inner: inner.1,
+            },
+        )
+    }
+    fn parse_literal(bits: &BitSlice<Msb0, u8>) -> (usize, usize) {
         let mut vec: BitVec<Msb0, u8> = BitVec::new();
         for chunk in bits.chunks(5) {
             vec.extend_from_bitslice(&chunk[1..]);
@@ -38,10 +47,39 @@ impl Packet {
                 break;
             }
         }
-        usize::from_str_radix(&bitslice_to_string(vec.as_bitslice()), 2).unwrap()
+        (
+            vec.len(),
+            usize::from_str_radix(&bitslice_to_string(vec.as_bitslice()), 2).unwrap(),
+        )
     }
-    fn parse_children(bits: &BitSlice<Msb0, u8>) -> Vec<Packet> {
-        todo!()
+    fn parse_children(bits: &BitSlice<Msb0, u8>) -> (usize, Vec<Packet>) {
+        dbg!(bits);
+        let mut packets = vec![];
+        let mut total_length = 0;
+        if !bits[0] {
+            total_length += 15;
+            let bitlength =
+                u16::from_str_radix(&bitslice_to_string(&dbg!(bits)[1..16]), 2).unwrap();
+            let mut bits = &bits[16..][..bitlength as usize];
+            while bits.len() > 3 {
+                let (length, packet) = Self::new(bits);
+                packets.push(packet);
+                total_length += length;
+                bits = bits.split_at(length + 1).1;
+            }
+        } else {
+            total_length += 11;
+            let inner_packetcount =
+                u16::from_str_radix(&bitslice_to_string(&bits[1..12]), 2).unwrap();
+            let mut bits = &bits[12..];
+            for _ in 0..inner_packetcount {
+                let (length, packet) = Self::new(bits);
+                total_length += length;
+                packets.push(packet);
+                bits = bits.split_at(length + 1).1;
+            }
+        }
+        (total_length, packets)
     }
 }
 #[derive(Debug)]
