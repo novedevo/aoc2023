@@ -2,13 +2,10 @@ use bitvec::prelude::*;
 use hex::FromHex;
 
 fn main() {
-    let tvec = Vec::from_hex("8A004A801A8002F478").unwrap();
+    let tvec = Vec::from_hex("A0016C880162017C3686B18A3D4780").unwrap();
     let transmission = tvec.view_bits::<Msb0>();
     let packet = Packet::new(transmission);
-    println!("{:#?}", packet)
-}
-fn to_u8(slice: &BitSlice<Msb0, u8>) -> u8 {
-    u8::from_str_radix(&bitslice_to_string(slice), 2).unwrap()
+    println!("{:#?}\n{}", packet, packet.1.version_sum())
 }
 #[derive(Debug)]
 struct Packet {
@@ -18,11 +15,15 @@ struct Packet {
 }
 impl Packet {
     fn new(bits: &BitSlice<Msb0, u8>) -> (usize, Self) {
-        let (version, type_id) = (to_u8(&bits[0..3]), to_u8(&bits[3..6]));
+        let (version, type_id) = (
+            bitslice_to_usize(&bits[0..3]) as u8,
+            bitslice_to_usize(&bits[3..6]) as u8,
+        );
         Self::inner_new(version, type_id, &bits[6..])
     }
     fn inner_new(version: u8, type_id: u8, inner_bits: &BitSlice<Msb0, u8>) -> (usize, Self) {
-        dbg!(inner_bits);
+        eprintln!("here");
+        dbg!(&inner_bits);
         let inner = if type_id == 4 {
             let literal = Self::parse_literal(inner_bits);
             (literal.0, Inner::Literal(literal.1))
@@ -47,39 +48,41 @@ impl Packet {
                 break;
             }
         }
-        (
-            vec.len(),
-            usize::from_str_radix(&bitslice_to_string(vec.as_bitslice()), 2).unwrap(),
-        )
+        (vec.len(), bitslice_to_usize(vec.as_bitslice()))
     }
     fn parse_children(bits: &BitSlice<Msb0, u8>) -> (usize, Vec<Packet>) {
-        dbg!(bits);
+        // dbg!(bits);
         let mut packets = vec![];
         let mut total_length = 0;
         if !bits[0] {
-            total_length += 15;
-            let bitlength =
-                u16::from_str_radix(&bitslice_to_string(&dbg!(bits)[1..16]), 2).unwrap();
-            let mut bits = &bits[16..][..bitlength as usize];
+            total_length += 16;
+            let bitlength = bitslice_to_usize(&bits[1..16]);
+            let mut bits = &bits[16..][..bitlength];
             while bits.len() > 3 {
                 let (length, packet) = Self::new(bits);
                 packets.push(packet);
                 total_length += length;
-                bits = bits.split_at(length + 1).1;
+                bits = &bits[length + 1..];
             }
         } else {
-            total_length += 11;
-            let inner_packetcount =
-                u16::from_str_radix(&bitslice_to_string(&bits[1..12]), 2).unwrap();
+            total_length += 12;
+            let inner_packetcount = bitslice_to_usize(&bits[1..12]);
             let mut bits = &bits[12..];
             for _ in 0..inner_packetcount {
                 let (length, packet) = Self::new(bits);
                 total_length += length;
                 packets.push(packet);
-                bits = bits.split_at(length + 1).1;
+                bits = &bits[length + 1..];
             }
         }
         (total_length, packets)
+    }
+    fn version_sum(&self) -> usize {
+        self.version as usize
+            + match &self.inner {
+                Inner::Literal(_) => 0,
+                Inner::Children(children) => children.iter().map(|child| child.version_sum()).sum(),
+            }
     }
 }
 #[derive(Debug)]
@@ -87,13 +90,8 @@ enum Inner {
     Literal(usize),
     Children(Vec<Packet>),
 }
-
-fn bitslice_to_string(bits: &BitSlice<Msb0, u8>) -> String {
-    bits.to_string()
-        .replace(", ", "")
-        .strip_prefix('[')
-        .unwrap()
-        .strip_suffix(']')
-        .unwrap()
-        .to_string()
+fn bitslice_to_usize(bits: &BitSlice<Msb0, u8>) -> usize {
+    bits.iter()
+        .by_val()
+        .fold(0, |acc, curr| acc * 2 + curr as usize)
 }
