@@ -40,8 +40,7 @@ impl Packet {
         Self::inner_new(version, type_id, &bits[6..])
     }
     fn inner_new(version: u8, type_id: u8, inner_bits: &[bool]) -> (usize, Self) {
-        eprintln!("here");
-        dbg!(&inner_bits);
+        debug(inner_bits);
         let inner = if type_id == 4 {
             let literal = Self::parse_literal(inner_bits);
             (literal.0, Inner::Literal(literal.1))
@@ -76,7 +75,7 @@ impl Packet {
             total_length += 16;
             let bitlength = bitslice_to_usize(&bits[1..16]);
             let mut bits = &bits[16..][..bitlength];
-            while bits.len() > 3 {
+            while bits.len() > 6 {
                 let (length, packet) = Self::new(bits);
                 packets.push(packet);
                 total_length += length;
@@ -110,4 +109,14 @@ enum Inner {
 }
 fn bitslice_to_usize(bits: &[bool]) -> usize {
     bits.iter().fold(0, |acc, curr| acc * 2 + *curr as usize)
+}
+fn debug(bits: &[bool]) {
+    for &bit in bits {
+        if bit {
+            print!("{}", 1);
+        } else {
+            print!("{}", 0);
+        }
+    }
+    println!();
 }
