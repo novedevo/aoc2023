@@ -4,7 +4,7 @@ fn main() {
         .unwrap();
     let mut dots = dots
         .lines()
-        .map(|line| line.split_once(",").unwrap())
+        .map(|line| line.split_once(',').unwrap())
         .map(|(x, y)| (x.parse().unwrap(), y.parse().unwrap()))
         .collect::<Vec<(usize, usize)>>();
     let folds = folds.lines().map(|line| {

@@ -4,7 +4,7 @@ use Node::*;
 fn main() {
     let edges = include_str!("../../data/day12.txt")
         .lines()
-        .map(|line| line.split_once("-").unwrap())
+        .map(|line| line.split_once('-').unwrap())
         .map(|(start, end)| [Node::from_str(start), Node::from_str(end)])
         .collect::<Vec<_>>();
     let solutions = solve(Start, &edges, HashSet::new(), HashSet::new(), true, vec![]);

@@ -1,7 +1,7 @@
 fn main() {
     let vec = "C0015000016115A2E0802F182340"
         .chars()
-        .map(|char| match char {
+        .flat_map(|char| match char {
             '0' => [false, false, false, false],
             '1' => [false, false, false, true],
             '2' => [false, false, true, false],
@@ -20,7 +20,6 @@ fn main() {
             'F' => [true, true, true, true],
             _ => unreachable!(),
         })
-        .flatten()
         .collect::<Vec<_>>();
     let packet = Packet::new(&vec);
     println!("{:#?}\n{}", packet, packet.1.version_sum())
