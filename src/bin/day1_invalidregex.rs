@@ -45,8 +45,6 @@ fn sum_numbers(input: &str) -> u32 {
         },
     );
 
-    // let first_pattern = format!("({})|(\\d)", numbers);
-    // let last_pattern = format!(".*(({})|(\\d))", numbers);
     let pattern = format!("((?:{numbers})|(?:\\d))");
 
     let regex = Regex::new(format!("{pattern}.*{pattern}?").as_str()).unwrap();
@@ -78,7 +76,7 @@ fn str_to_digit(s: &str, map: &HashMap<&str, u32>) -> u32 {
 
 fn main() {
     let input = include_str!("../../data/day1.txt");
-    // println!("sum of first and second digits is {}", sum_digits(input));
+    println!("sum of first and second digits is {}", sum_digits(input));
     println!(
         "tracking spelled out numbers, sum of first and second digits is {}",
         sum_numbers(input)
