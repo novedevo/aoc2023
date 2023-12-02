@@ -17,20 +17,21 @@ fn main() {
             });
             (id, handfuls.collect_vec())
         })
-        .filter(|(_, handfuls)| {
-            handfuls.iter().all(|handful| {
-                handful.iter().all(|(number, color)| {
-                    *number
-                        <= match *color {
-                            "red" => 12,
-                            "blue" => 14,
-                            "green" => 13,
+        .map(|(_, handfuls)| {
+            handfuls
+                .iter()
+                .fold((0u32, 0u32, 0u32), |(r, g, b), handful| {
+                    handful
+                        .iter()
+                        .fold((r, g, b), |(r, g, b), (number, color)| match *color {
+                            "red" => (r.max(*number), g, b),
+                            "green" => (r, g.max(*number), b),
+                            "blue" => (r, g, b.max(*number)),
                             _ => unreachable!(),
-                        }
+                        })
                 })
-            })
         })
-        .map(|(id, _)| id)
+        .map(|(r, g, b)| r * g * b)
         .sum();
     dbg!(sum);
 }
