@@ -1,4 +1,5 @@
-use itertools::Itertools;
+use std::collections::HashMap;
+
 use regex::Regex;
 
 fn sum_digits(input: &str) -> i32 {
@@ -19,62 +20,60 @@ fn sum_digits(input: &str) -> i32 {
 }
 
 fn sum_numbers(input: &str) -> u32 {
-    let numbers = [
-        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
-    ];
-    let first_pattern = format!("({})|(\\d)", numbers.join("|"));
-    let first_regex = Regex::new(dbg!(first_pattern).as_str()).unwrap();
-    let first_digits = input.lines().map(|s| {
-        first_regex
-            .captures(s)
-            .unwrap()
-            .iter()
-            .flatten()
-            .last()
-            .unwrap()
-    });
+    let map: HashMap<&str, u32> = [
+        ("one", 1),
+        ("two", 2),
+        ("three", 3),
+        ("four", 4),
+        ("five", 5),
+        ("six", 6),
+        ("seven", 7),
+        ("eight", 8),
+        ("nine", 9),
+    ]
+    .into();
 
-    let last_pattern = format!(".*(({})|(\\d))", numbers.join("|"));
-    let last_regex = Regex::new(dbg!(last_pattern).as_str()).unwrap();
-    let last_digits = input.lines().map(|s| {
-        last_regex
-            .captures(s)
-            .unwrap()
-            .iter()
-            .flatten()
-            .last()
-            .unwrap()
-    });
+    let numbers: String = map.keys().fold(
+        String::with_capacity(map.keys().map(|k| k.len() + 1).sum()),
+        |mut acc, elem| {
+            if !acc.is_empty() {
+                acc.push('|')
+            }
+            acc.push_str(elem);
+            acc
+        },
+    );
 
-    return first_digits
-        .zip(last_digits)
-        .map(|(fm, lm)| (str_to_digit(fm.as_str()), str_to_digit(lm.as_str())))
+    let first_pattern = format!("({})|(\\d)", numbers);
+    let last_pattern = format!(".*(({})|(\\d))", numbers);
+
+    return get_regex_capture(&first_pattern, input, &map)
+        .iter()
+        .zip(get_regex_capture(&last_pattern, input, &map))
         .map(|(d1, d2)| (d1 * 10) + d2)
         .sum();
 }
 
-fn str_to_digit(s: &str) -> u32 {
+fn get_regex_capture(pattern: &str, input: &str, map: &HashMap<&str, u32>) -> Vec<u32> {
+    let regex = Regex::new(pattern).unwrap();
+    return input
+        .lines()
+        .map(|s| regex.captures(s).unwrap().iter().flatten().last().unwrap())
+        .map(|m| str_to_digit(m.as_str(), map))
+        .collect();
+}
+
+fn str_to_digit(s: &str, map: &HashMap<&str, u32>) -> u32 {
     if s.len() == 1 {
         s.parse().unwrap()
     } else {
-        match s {
-            "one" => 1,
-            "two" => 2,
-            "three" => 3,
-            "four" => 4,
-            "five" => 5,
-            "six" => 6,
-            "seven" => 7,
-            "eight" => 8,
-            "nine" => 9,
-            _ => unreachable!(),
-        }
+        *map.get(s).unwrap()
     }
 }
 
 fn main() {
     let input = include_str!("../../data/day1.txt");
-    // println!("sum of first and second digits is {}", sum_digits(input));
+    println!("sum of first and second digits is {}", sum_digits(input));
     println!(
         "tracking spelled out numbers, sum of first and second digits is {}",
         sum_numbers(input)
