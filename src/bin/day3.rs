@@ -77,7 +77,13 @@ fn get_neighbours(width: usize, height: usize, r: usize, c: usize) -> Vec<(usize
     retval
 }
 
-fn print_with_context(array: &[Vec<char>], row: usize, column: usize, length: usize) {}
+fn get_part_numbers(array: &[Vec<char>], r: usize, c: usize) -> Vec<u32> {
+    get_neighbours(array[0].len(), array.len(), r, c)
+        .iter()
+        .map(|(row, column)| get_part_number(row, column, array))
+}
+
+fn get_part_number(row: usize, column: usize, array)
 
 fn is_symbol(array: &[Vec<char>], row: usize, column: usize) -> bool {
     let entry = array[row][column];
