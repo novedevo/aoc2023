@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use itertools::Itertools;
 
 fn main() {
@@ -8,37 +10,9 @@ fn main() {
         .collect_vec();
 
     let mut sum: u32 = 0;
-
-    let mut running_str = String::with_capacity(10);
-    let mut adj_symbol = false;
     for r in 0..array.len() {
-        if !running_str.is_empty() {
-            if adj_symbol {
-                sum += dbg!(&running_str).parse::<u32>().unwrap();
-                adj_symbol = false;
-            }
-            running_str.clear();
-        }
-        adj_symbol = false;
-
         for c in 0..array[r].len() {
-            let entry = array[r][c];
-            if !entry.is_ascii_digit() {
-                if !running_str.is_empty() {
-                    if adj_symbol {
-                        sum += dbg!(&running_str).parse::<u32>().unwrap();
-                        adj_symbol = false;
-                    }
-                    running_str.clear();
-                }
-            } else {
-                running_str.push(entry);
-                adj_symbol = adj_symbol
-                    || get_neighbours(array[r].len(), array.len(), r, c)
-                        .iter()
-                        .map(|(row, column)| is_symbol(&array, *row, *column))
-                        .any(|b| b);
-            }
+            sum += get_ratio(&array, r, c)
         }
     }
     dbg!(sum);
@@ -77,15 +51,58 @@ fn get_neighbours(width: usize, height: usize, r: usize, c: usize) -> Vec<(usize
     retval
 }
 
-fn get_part_numbers(array: &[Vec<char>], r: usize, c: usize) -> Vec<u32> {
-    get_neighbours(array[0].len(), array.len(), r, c)
+fn get_ratio(array: &[Vec<char>], r: usize, c: usize) -> u32 {
+    if array[r][c] != '*' {
+        return 0;
+    }
+    let numbers = get_neighbours(array[0].len(), array.len(), r, c)
         .iter()
-        .map(|(row, column)| get_part_number(row, column, array))
+        .filter_map(|(row, column)| get_part_number(array, *row, *column))
+        .collect::<HashSet<_>>();
+
+    if numbers.len() == 2 {
+        numbers
+            .iter()
+            .map(|(number, _row, _column)| number)
+            .product::<u32>()
+    } else {
+        0
+    }
 }
 
-fn get_part_number(row: usize, column: usize, array)
-
-fn is_symbol(array: &[Vec<char>], row: usize, column: usize) -> bool {
-    let entry = array[row][column];
-    !entry.is_ascii_digit() && entry != '.'
+fn get_part_number(array: &[Vec<char>], r: usize, c: usize) -> Option<(u32, usize, usize)> {
+    let entry = array[r][c];
+    if !entry.is_ascii_digit() {
+        return None;
+    }
+    let mut left_c = c;
+    let mut right_c = c;
+    let mut chars = vec![entry];
+    while left_c != 0 {
+        left_c -= 1;
+        let entry = array[r][left_c];
+        if !entry.is_ascii_digit() {
+            break;
+        }
+        chars.insert(0, entry);
+    }
+    while right_c != array.len() - 1 {
+        right_c += 1;
+        let entry = array[r][right_c];
+        if !entry.is_ascii_digit() {
+            break;
+        }
+        chars.push(entry);
+    }
+    dbg!(left_c, right_c, c, r);
+    Some((
+        dbg!(chars.iter().collect::<String>()).parse().unwrap(),
+        r,
+        left_c,
+    ))
 }
+
+// fn is_symbol(array: &[Vec<char>], row: usize, column: usize) -> bool {
+//     let entry = array[row][column];
+//     !entry.is_ascii_digit() && entry != '.'
+// }
