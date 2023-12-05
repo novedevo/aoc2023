@@ -1,9 +1,12 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
 
 fn main() {
     let input = include_str!("../../data/day4.txt");
+
+    let mut map = vec![1; input.lines().count()];
+
     let array = input
         .lines()
         .map(|line| line.split_once(": ").unwrap().1)
@@ -16,12 +19,18 @@ fn main() {
         })
         .map(|(winning_numbers, mut held_numbers)| {
             held_numbers.retain(|num| winning_numbers.contains(num));
-            if held_numbers.is_empty() {
-                return 0;
-            }
-            1 << (held_numbers.len() - 1)
+            held_numbers.len()
         })
-        .sum::<u32>();
+        .enumerate()
+        .map(|(i, val)| {
+            dbg!((i, val));
+            for next_card in i + 1..i + 1 + val {
+                map[next_card] += map[i]
+            }
+            dbg!(&map);
+            map[i]
+        })
+        .sum::<usize>();
     dbg!(array);
 }
 
