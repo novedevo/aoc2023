@@ -1,9 +1,11 @@
 use std::{
     collections::{HashMap, HashSet},
     ops::Range,
+    thread,
 };
 
 use itertools::Itertools;
+use rayon::iter::ParallelBridge;
 
 fn main() {
     let input = include_str!("../../data/day5.txt");
@@ -21,33 +23,40 @@ fn main() {
         .chunks(2);
     let seeds = chunks
         .into_iter()
-        .map(|chunk| chunk.collect_tuple().unwrap())
-        .map(|(start, length)| start..start + length)
-        .sorted_by(|r1, r2| r1.start.cmp(&r2.start))
-        .collect_vec();
+        .map(|chunk| chunk.collect_tuple().unwrap());
 
-    dbg!(&seeds);
+    let sections = sections.collect_vec();
+    let mut threads = vec![];
+    for (start, length) in seeds {
+        let range = start..start + length;
+        let mut sections = sections.clone().into_iter();
+        let t = thread::spawn(move || {
+            let seedtosoil = sections.next().map(parse_ranges).unwrap();
+            let soiltofertilizer = sections.next().map(parse_ranges).unwrap();
+            let fertilizertowater = sections.next().map(parse_ranges).unwrap();
+            let watertolight = sections.next().map(parse_ranges).unwrap();
+            let lighttotemperature = sections.next().map(parse_ranges).unwrap();
+            let temperaturetohumidity = sections.next().map(parse_ranges).unwrap();
+            let humiditytolocation = sections.next().map(parse_ranges).unwrap();
+            let m = range
+                .map(|seed| map_seed(seed, &seedtosoil))
+                .map(|seed| map_seed(seed, &soiltofertilizer))
+                .map(|seed| map_seed(seed, &fertilizertowater))
+                .map(|seed| map_seed(seed, &watertolight))
+                .map(|seed| map_seed(seed, &lighttotemperature))
+                .map(|seed| map_seed(seed, &temperaturetohumidity))
+                .map(|seed| map_seed(seed, &humiditytolocation))
+                .min()
+                .unwrap();
 
-    panic!("{}", seeds.len());
+            println!("{m}");
+        });
+        threads.push(t);
+    }
 
-    // let seedtosoil = sections.next().map(parse_ranges).unwrap();
-    // let soiltofertilizer = sections.next().map(parse_ranges).unwrap();
-    // let fertilizertowater = sections.next().map(parse_ranges).unwrap();
-    // let watertolight = sections.next().map(parse_ranges).unwrap();
-    // let lighttotemperature = sections.next().map(parse_ranges).unwrap();
-    // let temperaturetohumidity = sections.next().map(parse_ranges).unwrap();
-    // let humiditytolocation = sections.next().map(parse_ranges).unwrap();
-
-    // let m = seeds
-    //     .map(|seed| map_seed(seed, &seedtosoil))
-    //     .map(|seed| map_seed(seed, &soiltofertilizer))
-    //     .map(|seed| map_seed(seed, &fertilizertowater))
-    //     .map(|seed| map_seed(seed, &watertolight))
-    //     .map(|seed| map_seed(seed, &lighttotemperature))
-    //     .map(|seed| map_seed(seed, &temperaturetohumidity))
-    //     .map(|seed| map_seed(seed, &humiditytolocation))
-    //     .min();
-    // dbg!(m);
+    for thread in threads {
+        thread.join();
+    }
 }
 
 fn parse_ranges(lines: &str) -> Vec<(Range<usize>, Range<usize>)> {
