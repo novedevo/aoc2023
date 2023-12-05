@@ -11,23 +11,17 @@ fn main() {
         .lines()
         .map(|line| line.split_once(": ").unwrap().1)
         .map(|card| card.split_once(" | ").unwrap())
-        .map(|(a, b)| {
-            (
-                splitparse(a).collect::<HashSet<u32>>(),
-                splitparse(b).collect_vec(),
-            )
-        })
-        .map(|(winning_numbers, mut held_numbers)| {
-            held_numbers.retain(|num| winning_numbers.contains(num));
-            held_numbers.len()
+        .map(|(a, b)| (splitparse(a).collect::<HashSet<u32>>(), splitparse(b)))
+        .map(|(winning_numbers, held_numbers)| {
+            held_numbers
+                .filter(|num| winning_numbers.contains(num))
+                .count()
         })
         .enumerate()
         .map(|(i, val)| {
-            dbg!((i, val));
             for next_card in i + 1..i + 1 + val {
                 map[next_card] += map[i]
             }
-            dbg!(&map);
             map[i]
         })
         .sum::<usize>();
