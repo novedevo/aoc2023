@@ -1,11 +1,6 @@
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Range,
-    thread,
-};
+use std::{ops::Range, thread};
 
 use itertools::Itertools;
-use rayon::iter::ParallelBridge;
 
 fn main() {
     let input = include_str!("../../data/day5.txt");
@@ -55,7 +50,7 @@ fn main() {
     }
 
     for thread in threads {
-        thread.join();
+        thread.join().unwrap();
     }
 }
 

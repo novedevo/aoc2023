@@ -1,6 +1,4 @@
-use std::collections::{HashMap, HashSet};
-
-use itertools::Itertools;
+use std::collections::HashSet;
 
 fn main() {
     let input = include_str!("../../data/day4.txt");
