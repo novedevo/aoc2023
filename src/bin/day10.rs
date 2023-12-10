@@ -9,33 +9,51 @@ fn main() {
         .map(|line| line.chars().collect_vec())
         .collect_vec();
 
-    // let mut meowtrix = matrix.clone();
+    let mut meowtrix = matrix.clone();
     let spos = spos(&matrix);
     let mut next_state = next_from_spos(spos.0, spos.1, &matrix);
     let mut counter = 0;
+    meowtrix[spos.0][spos.1] = '🐈';
 
     while matrix[next_state.0][next_state.1] != 'S' {
-        next_state = next(next_state.0, next_state.1, next_state.2, &mut matrix);
+        next_state = next(
+            next_state.0,
+            next_state.1,
+            next_state.2,
+            &matrix,
+            &mut meowtrix,
+        );
         // counter += 1;
+    }
+
+    for row in 0..matrix.len() {
+        for col in 0..matrix[0].len() {
+            if meowtrix[row][col] != '🐈' {
+                matrix[row][col] = '.'
+            }
+        }
     }
 
     for row in 0..matrix.len() {
         let mut exterior = true;
         for col in 0..matrix[0].len() {
-            if matrix[row][col] == '🐈' {
+            if matrix[row][col] != '.' && matrix[row][col] != '-' {
                 exterior = !exterior;
-            } else {
-                matrix[row][col] = if exterior {
-                    'O'
+            } else if matrix[row][col] == '.' {
+                if exterior {
+                    matrix[row][col] = 'O'
                 } else {
+                    matrix[row][col] = '■';
                     counter += 1;
-                    'I'
                 }
             }
         }
     }
 
-    dbg!(matrix);
+    dbg!(matrix
+        .iter()
+        .map(|r| r.iter().collect::<String>())
+        .collect_vec());
     dbg!(counter);
 
     dbg!((counter as f64 / 2.0).ceil());
@@ -77,7 +95,8 @@ fn next(
     row: usize,
     col: usize,
     from: FromDirection,
-    matrix: &mut [Vec<char>],
+    matrix: &[Vec<char>],
+    meowtrix: &mut [Vec<char>],
 ) -> (usize, usize, FromDirection) {
     use FromDirection::*;
     let current = matrix[row][col];
@@ -128,7 +147,7 @@ fn next(
         _ => unreachable!(),
     };
 
-    matrix[row][col] = '🐈';
+    meowtrix[row][col] = '🐈';
     retval
 }
 
