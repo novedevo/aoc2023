@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 use itertools::Itertools;
 
 fn main() {
-    let input = include_str!("../../data/day10_test1.txt");
+    let input = include_str!("../../data/day10.txt");
     let mut matrix = input
         .lines()
         .map(|line| line.chars().collect_vec())
@@ -37,7 +37,11 @@ fn main() {
     for row in 0..matrix.len() {
         let mut exterior = true;
         for col in 0..matrix[0].len() {
-            if matrix[row][col] != '.' && matrix[row][col] != '-' {
+            if matrix[row][col] != '.'
+                && matrix[row][col] != '-'
+                && matrix[row][col] != '7'
+                && matrix[row][col] != 'F'
+            {
                 exterior = !exterior;
             } else if matrix[row][col] == '.' {
                 if exterior {
@@ -72,10 +76,6 @@ fn spos(matrix: &[Vec<char>]) -> (usize, usize) {
 
 fn next_from_spos(srow: usize, scol: usize, matrix: &[Vec<char>]) -> (usize, usize, FromDirection) {
     use FromDirection::*;
-    let above = matrix[srow - 1][scol];
-    if above == '|' || above == '7' || above == 'F' {
-        return (srow - 1, scol, Down);
-    }
     let below = matrix[srow + 1][scol];
     if below == '|' || below == 'L' || below == 'J' {
         return (srow + 1, scol, Up);
@@ -87,6 +87,10 @@ fn next_from_spos(srow: usize, scol: usize, matrix: &[Vec<char>]) -> (usize, usi
     let right = matrix[srow][scol + 1];
     if right == '-' || right == '7' || right == 'J' {
         return (srow, scol + 1, Left);
+    }
+    let above = matrix[srow - 1][scol];
+    if above == '|' || above == '7' || above == 'F' {
+        return (srow - 1, scol, Down);
     }
     unreachable!();
 }
