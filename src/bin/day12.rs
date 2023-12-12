@@ -1,31 +1,33 @@
 use std::{collections::HashMap, str::FromStr};
 
 use itertools::Itertools;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use regex::bytes::Regex;
 
 fn main() {
-    let input = include_str!("../../data/day12.txt");
+    let input = include_str!("../../data/day12_test.txt");
     let sum = input
         .lines()
+        .par_bridge()
         .map(|line| line.split_once(' ').unwrap())
         .map(|(conditions, groups)| {
             (
-                conditions,
+                format!("{conditions}?{conditions}?{conditions}?{conditions}?{conditions}"),
                 build_regex(
-                    &groups
+                    &format!("{groups},{groups},{groups},{groups},{groups},{groups}")
                         .split(',')
                         .map(|group| group.parse::<usize>().unwrap())
                         .collect_vec(),
                 ),
             )
         })
-        .map(|(conditions, regex)| count_matches(conditions, regex))
+        .map(|(conditions, regex)| count_matches(&conditions, regex))
         .sum::<usize>();
     dbg!(sum);
 }
 
-fn build_regex(conditions: &[usize]) -> Regex {
-    let builder = conditions
+fn build_regex(groups: &[usize]) -> Regex {
+    let builder = groups
         .iter()
         .map(|cond| format!("#{{{cond}}}"))
         .join(r"\.+");
