@@ -1,75 +1,88 @@
-use std::{collections::HashMap, str::FromStr};
-
+#![allow(unused)]
 use itertools::Itertools;
-use rayon::iter::{ParallelBridge, ParallelIterator};
-use regex::bytes::Regex;
+// use rayon::iter::{ParallelBridge, ParallelIterator};
 
 fn main() {
-    let input = include_str!("../../data/day12_test.txt");
+    let input = include_str!("../../data/day12.txt");
     let sum = input
         .lines()
-        .par_bridge()
+        // .par_bridge()
+        .filter(|line| line.chars().all(|c| c != '.'))
         .map(|line| line.split_once(' ').unwrap())
+        .map(to_part2)
         .map(|(conditions, groups)| {
             (
-                format!("{conditions}?{conditions}?{conditions}?{conditions}?{conditions}"),
-                build_regex(
-                    &format!("{groups},{groups},{groups},{groups},{groups},{groups}")
-                        .split(',')
-                        .map(|group| group.parse::<usize>().unwrap())
-                        .collect_vec(),
-                ),
+                conditions.to_string().into_bytes(),
+                groups
+                    .split(',')
+                    .map(|group| group.parse::<usize>().unwrap())
+                    .collect_vec(),
             )
         })
-        .map(|(conditions, regex)| count_matches(&conditions, regex))
-        .sum::<usize>();
+        .map(|(conditions, groups)| count_matches(conditions, groups))
+        .map(|c| c / 1_000_000_000)
+        .collect_vec();
     dbg!(sum);
 }
 
-fn build_regex(groups: &[usize]) -> Regex {
-    let builder = groups
-        .iter()
-        .map(|cond| format!("#{{{cond}}}"))
-        .join(r"\.+");
-
-    Regex::new(&format!(r"^\.*{builder}\.*$")).unwrap()
+fn to_part2((conditions, groups): (&str, &str)) -> (String, String) {
+    (
+        format!("{conditions}?{conditions}?{conditions}?{conditions}?{conditions}"),
+        format!("{groups},{groups},{groups},{groups},{groups}"),
+    )
 }
 
-fn count_matches(conditions: &str, regex: Regex) -> usize {
-    let catcount = conditions.chars().filter(|&c| c == '?').count();
-    if catcount == 0 {
+fn count_matches(conditions: Vec<u8>, groups: Vec<usize>) -> usize {
+    // let catcount = conditions.iter().filter(|&&c| c == b'?').count();
+    let preexisting = get_preexisting_groups(&conditions);
+    if preexisting == groups {
+        // dbg!(String::from_utf8(conditions).unwrap(), groups);
         return 1;
     }
-    let modifiable = conditions.to_string();
-    let mut modifiable = modifiable.into_bytes();
-    let unmodifiable = modifiable.clone();
 
-    let mut retval = 0;
-    for iterate in 0usize..(1 << catcount) {
-        let mut iterate_index = 0;
+    // let combinations = (0..groups.len() + )
 
-        for character in modifiable.iter_mut() {
-            if *character == b'?' {
-                *character = if iterate & (1 << iterate_index) != 0 {
-                    b'#'
-                } else {
-                    b'.'
-                };
-                iterate_index += 1;
+    get_upper_bound(&conditions, &groups)
+}
+
+fn get_preexisting_groups(conditions: &[u8]) -> Vec<usize> {
+    let mut retval = vec![];
+    let mut i = 0;
+    while i < conditions.len() {
+        if conditions[i] == b'#' {
+            let mut group = 0;
+            while i < conditions.len() && conditions[i] == b'#' {
+                group += 1;
+                i += 1;
             }
+            retval.push(group);
+        } else {
+            i += 1
         }
-
-        if regex.is_match(&modifiable) {
-            // dbg!(
-            //     iterate,
-            //     String::from_utf8(modifiable.clone()).unwrap(),
-            //     regex.as_str()
-            // );
-            retval += 1;
-        }
-
-        modifiable.copy_from_slice(&unmodifiable);
     }
 
     retval
+}
+
+//fn split (?) - just do it recursively? split at dots? there's a limited size,,,
+
+fn get_upper_bound(conditions: &[u8], groups: &[usize]) -> usize {
+    let filled_in_cells = groups.iter().sum::<usize>();
+    let filled_in_cells_with_gaps = filled_in_cells + groups.len() - 1;
+    if filled_in_cells_with_gaps > conditions.len() {
+        let conds = String::from_utf8(conditions.to_vec()).unwrap();
+        dbg!(
+            conds,
+            groups,
+            conditions.len(),
+            filled_in_cells,
+            filled_in_cells_with_gaps
+        );
+        unreachable!();
+    }
+
+    num::integer::binomial(
+        groups.len() + conditions.len() - filled_in_cells_with_gaps,
+        groups.len(),
+    )
 }
