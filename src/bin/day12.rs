@@ -4,13 +4,13 @@ use memoize::memoize;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 
 fn main() {
-    let input = include_str!("../../data/day12_test.txt");
+    let input = include_str!("../../data/day12.txt");
     let sum = input
         .lines()
         // .par_bridge()
         // .filter(|line| line.chars().all(|c| c != '.'))
         .flat_map(|line| line.split_once(' '))
-        // .map(to_part2)
+        .map(to_part2)
         .map(|(conditions, groups)| {
             (
                 conditions.to_string().into_bytes(),
@@ -20,10 +20,10 @@ fn main() {
                     .collect_vec(),
             )
         })
-        .map(|(conditions, groups)| count_matches(conditions, groups, vec![], false))
+        .map(|(conditions, groups)| count_matches(conditions, groups, false))
         // .map(|c| c / 1_000_000_000)
         .collect_vec();
-    dbg!(sum);
+    dbg!(&sum, sum.iter().sum::<usize>());
 }
 
 fn to_part2((conditions, groups): (&str, &str)) -> (String, String) {
@@ -33,13 +33,8 @@ fn to_part2((conditions, groups): (&str, &str)) -> (String, String) {
     )
 }
 
-// #[memoize]
-fn count_matches(
-    conditions: Vec<u8>,
-    groups: Vec<usize>,
-    mut history: Vec<u8>,
-    required_to_continue: bool,
-) -> usize {
+#[memoize]
+fn count_matches(conditions: Vec<u8>, groups: Vec<usize>, required_to_continue: bool) -> usize {
     if conditions.is_empty() && groups.is_empty() {
         return 1;
     } else if conditions.is_empty() {
@@ -57,10 +52,8 @@ fn count_matches(
         if required_to_continue {
             return 0;
         }
-        history.push(b'.');
-        count_matches(next_conditions, groups, history, false)
+        count_matches(next_conditions, groups, false)
     } else if conditions[0] == b'#' {
-        history.push(b'#');
         if groups[0] == 1 {
             //we finished a group, so the next one has to be either the end or a dot
             if next_conditions.is_empty() {
@@ -73,27 +66,19 @@ fn count_matches(
                 0
             } else {
                 next_conditions[0] = b'.';
-                count_matches(next_conditions, groups[1..].to_vec(), history, false)
+                count_matches(next_conditions, groups[1..].to_vec(), false)
             }
         } else {
             let mut next_groups = groups;
             next_groups[0] -= 1;
-            count_matches(next_conditions, next_groups, history, true)
+            count_matches(next_conditions, next_groups, true)
         }
     } else if conditions[0] == b'?' {
-        history.push(b'.');
         let placed_dot = if required_to_continue {
             0
         } else {
-            count_matches(
-                next_conditions.clone(),
-                groups.clone(),
-                history.clone(),
-                false,
-            )
+            count_matches(next_conditions.clone(), groups.clone(), false)
         };
-        history.pop();
-        history.push(b'#');
         let placed_hash = if groups[0] == 1 {
             //we finished a group, so the next one has to be either the end or a dot
             if next_conditions.is_empty() {
@@ -106,12 +91,12 @@ fn count_matches(
                 0
             } else {
                 next_conditions[0] = b'.';
-                count_matches(next_conditions, groups[1..].to_vec(), history, false)
+                count_matches(next_conditions, groups[1..].to_vec(), false)
             }
         } else {
             let mut next_groups = groups;
             next_groups[0] -= 1;
-            count_matches(next_conditions, next_groups, history, true)
+            count_matches(next_conditions, next_groups, true)
         };
         placed_dot + placed_hash
     } else {
