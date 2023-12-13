@@ -1,15 +1,16 @@
 #![allow(unused)]
 use itertools::Itertools;
-// use rayon::iter::{ParallelBridge, ParallelIterator};
+use memoize::memoize;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 
 fn main() {
-    let input = include_str!("../../data/day12.txt");
+    let input = include_str!("../../data/day12_test.txt");
     let sum = input
         .lines()
         // .par_bridge()
-        .filter(|line| line.chars().all(|c| c != '.'))
-        .map(|line| line.split_once(' ').unwrap())
-        .map(to_part2)
+        // .filter(|line| line.chars().all(|c| c != '.'))
+        .flat_map(|line| line.split_once(' '))
+        // .map(to_part2)
         .map(|(conditions, groups)| {
             (
                 conditions.to_string().into_bytes(),
@@ -19,8 +20,8 @@ fn main() {
                     .collect_vec(),
             )
         })
-        .map(|(conditions, groups)| count_matches(conditions, groups))
-        .map(|c| c / 1_000_000_000)
+        .map(|(conditions, groups)| count_matches(conditions, groups, vec![], false))
+        // .map(|c| c / 1_000_000_000)
         .collect_vec();
     dbg!(sum);
 }
@@ -32,57 +33,88 @@ fn to_part2((conditions, groups): (&str, &str)) -> (String, String) {
     )
 }
 
-fn count_matches(conditions: Vec<u8>, groups: Vec<usize>) -> usize {
-    // let catcount = conditions.iter().filter(|&&c| c == b'?').count();
-    let preexisting = get_preexisting_groups(&conditions);
-    if preexisting == groups {
-        // dbg!(String::from_utf8(conditions).unwrap(), groups);
+// #[memoize]
+fn count_matches(
+    conditions: Vec<u8>,
+    groups: Vec<usize>,
+    mut history: Vec<u8>,
+    required_to_continue: bool,
+) -> usize {
+    if conditions.is_empty() && groups.is_empty() {
         return 1;
-    }
-
-    // let combinations = (0..groups.len() + )
-
-    get_upper_bound(&conditions, &groups)
-}
-
-fn get_preexisting_groups(conditions: &[u8]) -> Vec<usize> {
-    let mut retval = vec![];
-    let mut i = 0;
-    while i < conditions.len() {
-        if conditions[i] == b'#' {
-            let mut group = 0;
-            while i < conditions.len() && conditions[i] == b'#' {
-                group += 1;
-                i += 1;
-            }
-            retval.push(group);
+    } else if conditions.is_empty() {
+        return 0;
+    } else if groups.is_empty() {
+        if conditions.iter().all(|&c| c == b'.' || c == b'?') {
+            return 1;
         } else {
-            i += 1
+            return 0;
         }
     }
 
-    retval
-}
-
-//fn split (?) - just do it recursively? split at dots? there's a limited size,,,
-
-fn get_upper_bound(conditions: &[u8], groups: &[usize]) -> usize {
-    let filled_in_cells = groups.iter().sum::<usize>();
-    let filled_in_cells_with_gaps = filled_in_cells + groups.len() - 1;
-    if filled_in_cells_with_gaps > conditions.len() {
-        let conds = String::from_utf8(conditions.to_vec()).unwrap();
-        dbg!(
-            conds,
-            groups,
-            conditions.len(),
-            filled_in_cells,
-            filled_in_cells_with_gaps
-        );
+    let mut next_conditions = conditions[1..].to_vec();
+    if conditions[0] == b'.' {
+        if required_to_continue {
+            return 0;
+        }
+        history.push(b'.');
+        count_matches(next_conditions, groups, history, false)
+    } else if conditions[0] == b'#' {
+        history.push(b'#');
+        if groups[0] == 1 {
+            //we finished a group, so the next one has to be either the end or a dot
+            if next_conditions.is_empty() {
+                if groups.len() == 1 {
+                    1
+                } else {
+                    0
+                }
+            } else if next_conditions[0] == b'#' {
+                0
+            } else {
+                next_conditions[0] = b'.';
+                count_matches(next_conditions, groups[1..].to_vec(), history, false)
+            }
+        } else {
+            let mut next_groups = groups;
+            next_groups[0] -= 1;
+            count_matches(next_conditions, next_groups, history, true)
+        }
+    } else if conditions[0] == b'?' {
+        history.push(b'.');
+        let placed_dot = if required_to_continue {
+            0
+        } else {
+            count_matches(
+                next_conditions.clone(),
+                groups.clone(),
+                history.clone(),
+                false,
+            )
+        };
+        history.pop();
+        history.push(b'#');
+        let placed_hash = if groups[0] == 1 {
+            //we finished a group, so the next one has to be either the end or a dot
+            if next_conditions.is_empty() {
+                if groups.len() == 1 {
+                    1
+                } else {
+                    0
+                }
+            } else if next_conditions[0] == b'#' {
+                0
+            } else {
+                next_conditions[0] = b'.';
+                count_matches(next_conditions, groups[1..].to_vec(), history, false)
+            }
+        } else {
+            let mut next_groups = groups;
+            next_groups[0] -= 1;
+            count_matches(next_conditions, next_groups, history, true)
+        };
+        placed_dot + placed_hash
+    } else {
         unreachable!();
     }
-
-    num::integer::binomial(
-        groups.len() + conditions.len() - filled_in_cells_with_gaps,
-        groups.len(),
-    )
 }
