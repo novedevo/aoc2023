@@ -9,9 +9,9 @@
 			"request": "launch",
 			"name": "Debug executable of set day",
 			"cargo": {
-				"args": ["build", "--bin=day12", "--package=aoc2023"],
+				"args": ["build", "--bin=day13", "--package=aoc2023"],
 				"filter": {
-					"name": "day12",
+					"name": "day13",
 					"kind": "bin"
 				}
 			},
