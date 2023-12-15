@@ -40,16 +40,16 @@ fn main() {
     }
 
     dbg!(
-        iters,
-        looped_iters,
-        loop_length,
-        remaining_iters,
-        remaining_real_iters,
+        // iters,
+        // looped_iters,
+        // loop_length,
+        // remaining_iters,
+        // remaining_real_iters,
         sum,
-        &mirror
-            .iter()
-            .map(|line| String::from_utf8(line.to_vec()).unwrap())
-            .collect_vec()
+        // &mirror
+        //     .iter()
+        //     .map(|line| String::from_utf8(line.to_vec()).unwrap())
+        //     .collect_vec()
     );
 }
 
