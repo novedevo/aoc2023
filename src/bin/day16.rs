@@ -59,13 +59,7 @@ fn try_edge(matrix: &[Vec<char>], first_state: (usize, usize, FromDirection)) ->
                 .filter(|state| previous_beamstates.get(state).is_none()),
         );
     }
-    dbg!(
-        meowtrix.iter().flatten().filter(|c| **c == '🐈').count(),
-        // meowtrix
-        //     .into_iter()
-        //     .map(|line| line.iter().collect::<String>())
-        //     .collect_vec()
-    )
+    meowtrix.iter().flatten().filter(|c| **c == '🐈').count()
 }
 
 fn next(
@@ -77,7 +71,6 @@ fn next(
 ) -> Vec<(usize, usize, FromDirection)> {
     use FromDirection::*;
     let current = matrix[row][col];
-    // dbg!(row, col, current, from);
     meowtrix[row][col] = '🐈';
     let row = row as isize;
     let col = col as isize;
@@ -112,17 +105,12 @@ fn next(
         },
         _ => unreachable!(),
     };
-    // dbg!(&retval);
-    let retval = retval
+    retval
         .into_iter()
         .filter(|(r, c, _)| *r >= 0 && *c >= 0)
         .map(|(r, c, f)| (r as usize, c as usize, f))
         .filter(|(r, c, _)| *r < matrix.len() && *c < matrix[0].len())
-        .collect();
-
-    // dbg!(&retval);
-
-    retval
+        .collect()
 }
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
