@@ -1,12 +1,13 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 
 use enum_iterator::{all, Sequence};
 use itertools::Itertools;
 // use memoize::memoize;
 // use rayon::iter::{ParallelBridge, ParallelIterator};
 
+//1261 is TOO HIGH
 fn main() {
-    let input = include_str!("../../data/day17_test.txt");
+    let input = include_str!("../../data/day17.txt");
     let matrix = input
         .lines()
         .map(|line| {
@@ -29,11 +30,13 @@ fn main() {
     bfs_frontier.push_back((start_down, 0));
 
     while let Some((next_state, heat_loss)) = bfs_frontier.pop_front() {
+        if &heat_loss >= previous_beamstates.get(&next_state).unwrap_or(&usize::MAX) {
+            continue;
+        }
         previous_beamstates.insert(next_state, heat_loss);
         let next_states = next(next_state, matrix.len() - 1, matrix[0].len() - 1)
             .into_iter()
-            .map(|state| (state, heat_loss + matrix[state.row][state.col]))
-            .filter(|(state, hl)| hl < previous_beamstates.get(state).unwrap_or(&usize::MAX));
+            .map(|state| (state, heat_loss + matrix[state.row][state.col]));
         bfs_frontier.extend(next_states);
     }
 
@@ -48,18 +51,22 @@ fn main() {
 }
 
 fn next(state: State, max_row: usize, max_col: usize) -> Vec<State> {
-    next_directions(state.from)
+    let nds = next_directions(state.from);
+    let retval = nds
         .iter()
         .filter_map(|&direction| {
             let (row, col) = direction.step(state.row, state.col, max_row, max_col)?;
             let consecutive = if direction == state.from {
                 state.consecutive + 1
-            } else {
+            } else if state.consecutive >= 4 {
                 1
+            } else {
+                return None;
             };
             State::new(row, col, direction, consecutive)
         })
-        .collect()
+        .collect();
+    retval
 }
 
 fn next_directions(direction: FromDirection) -> Vec<FromDirection> {
@@ -77,7 +84,7 @@ struct State {
 }
 impl State {
     fn new(row: usize, col: usize, from: FromDirection, consecutive: u8) -> Option<Self> {
-        if consecutive > 3 {
+        if consecutive > 10 {
             None
         } else {
             Some(Self {
