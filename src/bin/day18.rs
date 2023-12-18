@@ -15,20 +15,28 @@ fn main() {
         .lines()
         .map(|line| line.split_ascii_whitespace().collect_tuple().unwrap())
         .map(|(direction, meters, hexcode)| {
+            dbg!(hexcode)
+                .strip_prefix("(#")
+                .unwrap()
+                .strip_suffix(')')
+                .unwrap()
+        })
+        .map(|hexcode| {
             (
-                direction.parse::<Direction>().unwrap(),
-                meters.parse::<isize>().unwrap(),
-                hexcode
-                    .strip_prefix('(')
-                    .unwrap()
-                    .strip_suffix(')')
-                    .unwrap(),
+                isize::from_str_radix(&hexcode[..5], 16).unwrap(),
+                match hexcode.chars().last().unwrap() {
+                    '0' => Direction::Right,
+                    '1' => Direction::Down,
+                    '2' => Direction::Left,
+                    '3' => Direction::Up,
+                    _ => unreachable!(),
+                },
             )
         })
         .collect_vec();
     let coords = meow
         .iter()
-        .fold(vec![(0, 0)], |mut coords, (direction, meters, hexcode)| {
+        .fold(vec![(0, 0)], |mut coords, (meters, direction)| {
             let (initrow, initcol) = coords.last().unwrap();
             coords.push(match direction {
                 Direction::Up => (initrow - meters, *initcol),
@@ -54,7 +62,7 @@ fn main() {
     }
 
     let catarea = area / 2;
-    let perimeter = meow.iter().map(|(_, meters, _)| meters).sum::<isize>();
+    let perimeter = meow.iter().map(|(meters, _)| meters).sum::<isize>();
     dbg!(catarea, perimeter, catarea + perimeter / 2 + 1);
 
     // let mut digsite = vec![vec!['.'; 6000]; 6000];
