@@ -62,14 +62,24 @@ fn main() {
         })
         .collect::<HashMap<&'static str, _>>();
 
+    //had the idea to run constant propagation until a fixed point, but that would only reduce complexity by about half i think
+
     let reg = Regex::new(r"\{x=(\d+),m=(\d+),a=(\d+),s=(\d+)\}").unwrap();
 
-    let parts = part_ratings
-        .lines()
-        .map(|part| Part::new(reg.captures(part).unwrap()))
+    //part2 idea: make a tree of all possible paths. shouldn't be too many since this is a dag and doesn't really have exponentials like that.
+
+    let parts = (1..=4000)
+        .combinations_with_replacement(4)
+        .map(|v| Part {
+            x: v[0],
+            m: v[1],
+            a: v[2],
+            s: v[3],
+        })
+        .par_bridge()
+        // .map(|part| Part::new(reg.captures(part).unwrap()))
         .filter(|part| accepts(&workflows, part))
-        .map(|part| part.x + part.m + part.a + part.s)
-        .sum::<usize>();
+        .count();
     dbg!(parts);
 }
 
