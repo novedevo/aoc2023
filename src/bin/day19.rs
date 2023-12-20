@@ -2,7 +2,7 @@
 use std::{
     collections::{HashMap, VecDeque},
     convert::Infallible,
-    ops::{Index, IndexMut},
+    ops::{Index, IndexMut, Range},
     str::FromStr,
 };
 
@@ -64,23 +64,31 @@ fn main() {
 
     //had the idea to run constant propagation until a fixed point, but that would only reduce complexity by about half i think
 
-    let reg = Regex::new(r"\{x=(\d+),m=(\d+),a=(\d+),s=(\d+)\}").unwrap();
+    // let reg = Regex::new(r"\{x=(\d+),m=(\d+),a=(\d+),s=(\d+)\}").unwrap();
 
     //part2 idea: make a tree of all possible paths. shouldn't be too many since this is a dag and doesn't really have exponentials like that.
 
-    let parts = (1..=4000)
-        .combinations_with_replacement(4)
-        .map(|v| Part {
-            x: v[0],
-            m: v[1],
-            a: v[2],
-            s: v[3],
-        })
-        .par_bridge()
-        // .map(|part| Part::new(reg.captures(part).unwrap()))
-        .filter(|part| accepts(&workflows, part))
-        .count();
-    dbg!(parts);
+    dbg!(count(
+        &workflows,
+        "in",
+        [1..4001, 1..4001, 1..4001, 1..4001]
+    ));
+}
+
+fn count(
+    workflows: &HashMap<&'static str, Vec<Rule>>,
+    current: &'static str,
+    ranges: [Range<usize>; 4],
+) -> usize {
+    for rule in workflows[current].iter() {
+        let valid_ranges = match rule {
+            Rule::Accept => todo!(),
+            Rule::Reject => [0..0, 0..0, 0..0, 0..0],
+            Rule::ConditionalNext(_, _, _, _) => todo!(),
+            Rule::InstantJump(_) => todo!(),
+        };
+    }
+    todo!()
 }
 
 fn accepts(workflows: &HashMap<&'static str, Vec<Rule>>, part: &Part) -> bool {
