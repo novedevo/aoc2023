@@ -1,3 +1,4 @@
+#![allow(unused)]
 use std::{
     collections::{HashMap, VecDeque},
     convert::Infallible,
