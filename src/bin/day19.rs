@@ -101,7 +101,13 @@ fn accepts(workflows: &HashMap<&'static str, Vec<Rule>>, part: &Part) -> bool {
                 }
             }
         }
-        let mut workflow = workflows.get(next_workflow.unwrap()).unwrap();
+        let next_workflow = next_workflow.unwrap();
+        if next_workflow == "A" {
+            return true;
+        } else if next_workflow == "R" {
+            return false;
+        }
+        workflow = workflows.get(next_workflow).unwrap();
     }
 
     unreachable!()
